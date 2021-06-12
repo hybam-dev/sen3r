@@ -422,7 +422,7 @@ class NcExplorer:
 
         return target_x_y, rad_in_bands
 
-    def get_xy_polygon_from_json(self, poly_path, geojson=True):
+    def get_xy_polygon_from_json(self, poly_path, geojson=True, parallel=True):
         """
         Takes in a geojson polygon file and do black magic to return a dataframe
         containing the data in each band that falls inside the polygon.
@@ -431,9 +431,12 @@ class NcExplorer:
         if geojson:
             vertices = utils.geojson_to_polygon(poly_path)
 
-        gpc = ParallelCoord()
+        if parallel:
+            gpc = ParallelCoord()
 
-        xy_vertices = [gpc.parallel_get_xy_poly(self.g_lat, self.g_lon, vert) for vert in vertices]
+            xy_vertices = [gpc.parallel_get_xy_poly(self.g_lat, self.g_lon, vert) for vert in vertices]
+        else:
+            xy_vertices = [utils.get_x_y_poly(self.g_lat, self.g_lon, vert) for vert in vertices]
 
         return xy_vertices, vertices
 
@@ -501,7 +504,7 @@ class NcExplorer:
         the data of the image that falls inside the polygon.
         """
         # I) Convert the lon/lat polygon into a x/y poly:
-        xy_vert, ll_vert = self.get_xy_polygon_from_json(poly_path=poly_path)
+        xy_vert, ll_vert = self.get_xy_polygon_from_json(poly_path=poly_path, parallel=go_parallel)
 
         # II) Use the poly to generate an extraction mask:
         mask, cc, rr = self.get_raster_mask(xy_vertices=xy_vert)
