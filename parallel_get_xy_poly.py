@@ -10,9 +10,9 @@ from pathlib import Path
 
 
 class ParallelCoord:
-    
+
     def vect_dist_subtraction(self, coord_pair):
-        subtraction = coord_pair - grid 
+        subtraction = coord_pair - grid
         dist = np.linalg.norm(subtraction, axis=2)
         result = np.where(dist == dist.min())
         target_x_y = [result[0][0], result[1][0]]
@@ -25,7 +25,7 @@ class ParallelCoord:
         grid = np.concatenate([lat_arr[..., None], lon_arr[..., None]], axis=2)
 
         # Polyline is a GeoJSON coordinate array
-        polyline = polyline.squeeze() # squeeze removes one of the dimensions of the array
+        polyline = polyline.squeeze()  # squeeze removes one of the dimensions of the array
         # https://numpy.org/doc/stable/reference/generated/numpy.squeeze.html
 
         # Generate a list containing the lat, lon coordinates for each point of the input poly

@@ -13,6 +13,7 @@ from PIL import Image
 from datetime import datetime
 from scipy.signal import argrelextrema
 from scipy import stats
+from sklearn.cluster import DBSCAN
 
 from matplotlib import gridspec
 
@@ -31,6 +32,23 @@ class TsGenerator:
     imgdpi = 100
     rcparam = [14, 5.2]
     glint = 12.0
+
+    norm_s3_bands = ['Oa01_reflectance:float',
+                     'Oa02_reflectance:float',
+                     'Oa03_reflectance:float',
+                     'Oa04_reflectance:float',
+                     'Oa05_reflectance:float',
+                     'Oa06_reflectance:float',
+                     'Oa07_reflectance:float',
+                     'Oa08_reflectance:float',
+                     'Oa09_reflectance:float',
+                     'Oa10_reflectance:float',
+                     'Oa11_reflectance:float',
+                     'Oa12_reflectance:float',
+                     'Oa16_reflectance:float',
+                     'Oa17_reflectance:float',
+                     'Oa18_reflectance:float',
+                     'Oa21_reflectance:float']
 
     bname_dict = {'B1-400': 'Oa01: 400 nm',
                   'B2-412.5': 'Oa02: 412.5 nm',
@@ -176,7 +194,62 @@ class TsGenerator:
         else:
             return 0
 
-    def get_glint(self, df):
+    @staticmethod
+    def calc_nd_index(df, band1, band2, column_name='nd_index'):
+        idx = (df[band1] - df[band2]) / (df[band1] + df[band2])
+        df[column_name] = idx
+        pass
+
+    @staticmethod
+    def _gettxt():
+        print('v-fin')
+        pass
+
+    @staticmethod
+    def _normalize(df, bands, norm_band):
+        df = df.copy()
+        df[bands] = df[bands].to_numpy() - df[norm_band].to_numpy()[..., None]
+        return df
+
+    @staticmethod
+    # concentração = 759,12 * (NIR /RED)^1,92
+    def _spm_modis(nir, red):
+        return 759.12 * ((nir / red) ** 1.92)
+
+    @staticmethod
+    def _power(x, a, b, c):
+        return a * (x) ** (b) + c
+
+    def get_spm(self, band665, band865, cutoff_value=0.027, cutoff_delta=0.007, low_params=None, high_params=None):
+
+        b665 = band665 / np.pi
+        b865 = band865 / np.pi
+
+        if cutoff_delta == 0:
+            transition_coef = np.where(b665 <= cutoff_value, 0, 1)
+
+        else:
+            transition_range = (cutoff_value - cutoff_delta, cutoff_value + cutoff_delta)
+            transition_coef = (b665 - transition_range[0]) / (transition_range[1] - transition_range[0])
+
+            transition_coef = np.clip(transition_coef, 0, 1)
+
+        # if params are not passed, use default params obtained from the Amazon dataset
+        low_params = [2.79101975e+05, 2.34858344e+00, 4.20023206e+00] if low_params is None else low_params
+        high_params = [848.97770516, 1.79293191, 8.2788616] if high_params is None else high_params
+
+        # low = Fit.power(b665, *low_params).fillna(0)
+        # high = Fit.power(b865/b665, *high_params).fillna(0)
+
+        low = self._power(b665, *low_params).fillna(0)
+        # high = power(b865/b665, *high_params).fillna(0)
+        high = self._spm_modis(b865, b665)
+
+        spm = (1 - transition_coef) * low + transition_coef * high
+        return spm
+
+    @staticmethod
+    def get_glint(df):
         """
         Calculates glint angle based on paper:
         An Enhanced Contextual Fire Detection Algorithm for MODIS
@@ -191,8 +264,7 @@ class TsGenerator:
 
         # excel version
         # =GRAUS(ACOS(COS(RADIANOS(OZA))*COS(RADIANOS(SZA))-SEN(RADIANOS(OZA))*SEN(RADIANOS(SZA))*COS(RADIANOS(ABS(SAA-OAA)))))
-
-        return df
+        pass
 
     def add_flags_to_df(self, df):
         """
@@ -200,9 +272,10 @@ class TsGenerator:
         """
         df['FLAGS'] = df['WQSF_lsb:double'].apply(self.get_flags)
         df['QUALITY'] = df['FLAGS'].apply(self.get_quality)
-        return df
+        pass
 
-    def update_df(self, df, ir_min_threshold=False, ir_max_threshold=False, max_aot=False):
+    def update_df(self, df, ir_min_threshold=False, ir_max_threshold=False,
+                  max_aot=False, cams_val=False, normalize=False):
 
         # Delete indexes for which Oa01_reflectance is saturated:
         indexNames = df[df['Oa01_reflectance:float'] == 1.0000184].index
@@ -210,6 +283,12 @@ class TsGenerator:
 
         # This should represent 100% of the pixels inside the SHP area before applying the filters.
         df['ABSVLDPX'] = len(df)
+
+        #####################################
+        # Normalization based on B21-1020nm #
+        #####################################
+        if normalize:
+            df = self._normalize(df, self.norm_s3_bands, norm_band='Oa21_reflectance:float')
 
         # In case the reflectance of water pixels should not be below 0.001
         # in the NIR Band (Oa17:865nm), we will drop using the threshold:
@@ -225,20 +304,24 @@ class TsGenerator:
             # Delete these row indexes from dataFrame
             df.drop(indexNames, inplace=True)
 
+        ##############
+        # CAMS PROXY #
+        ##############
+        if cams_val:
+            # CAMS observations tend to be always bellow that of S3 AOT 865
+            # handle observations that does not follow this rule as outliers
+            df = df[df['T865:float'] > cams_val]
+
         # Add new FLAGS and QUALITY cols
-        df = self.add_flags_to_df(df)
+        self.add_flags_to_df(df)
 
         # Delete indexes for which QUALITY = 0
         indexNames = df[df['QUALITY'] == 0].index
         df.drop(indexNames, inplace=True)
 
         # Delete indexes for which FLAGS = False
-        indexNames = df[df['FLAGS'] == False].index
+        indexNames = df[df['FLAGS'] == False].index  # TODO: verify why the use of 'is' instead of '==' breaks the code.
         df.drop(indexNames, inplace=True)
-
-        # Delete rows where GLINT < 25
-        # indexNames = df[df['GLINT'] < 25].index
-        # df.drop(indexNames, inplace=True)
 
         if max_aot:  # 0.6
             # Delete the indexes for which T865 (Aerosol optical depth) is thicker than 0.6
@@ -268,8 +351,11 @@ class TsGenerator:
         ###############################
         # DROP EVERY NAN REFLECTANCES #
         ###############################
-        df = df.dropna()
+        df.dropna(inplace=True)
 
+        #####################
+        # CURVE SHAPE RULES #
+        #####################
         # Oa16 must always be above Oa12, for Oa12 is an atmospheric attenuation window
         # df = df[df['Oa16_reflectance:float'] > df['Oa12_reflectance:float']]
 
@@ -279,9 +365,18 @@ class TsGenerator:
         ##########################
         # Calculate GLINT for DF #
         ##########################
-        df = self.get_glint(df)
+        self.get_glint(df)
         row_idx = df[df['GLINT'] <= self.glint].index
         df.drop(row_idx, inplace=True)
+
+        ##########################
+        # Add MNDWI / NDWI Index #
+        ##########################
+        self.calc_nd_index(df, 'Oa06_reflectance:float', 'Oa21_reflectance:float', column_name='MNDWI')  # Green / SWIR
+        self.calc_nd_index(df, 'Oa06_reflectance:float', 'Oa17_reflectance:float', column_name='NDWI')  # Green / IR
+        valid_mndwi = (df['MNDWI'] > -0.99) & (df['MNDWI'] < 0.99)
+        valid_ndwi = (df['NDWI'] > -0.99) & (df['NDWI'] < 0.99)
+        df = df[valid_mndwi & valid_ndwi]
 
         ############################
         # CLASS TEST FOR T865/A865 #
@@ -326,6 +421,11 @@ class TsGenerator:
         #####################################
         df.reset_index(drop=True, inplace=True)
 
+        ###########
+        # Get SPM #
+        ###########
+        df['SPM'] = self.get_spm(band865=df['Oa17_reflectance:float'], band665=df['Oa08_reflectance:float'])
+
         return df
     # manacapuru 0.2
     # negro 0.001
@@ -333,7 +433,10 @@ class TsGenerator:
                     ir_min_threshold=False,
                     ir_max_threshold=0.2,
                     max_aot=0.6,
-                    kde=False, GPT=False, cams_val=False):
+                    kde=False,
+                    GPT=False,
+                    cams_val=False,
+                    normalize=False):
         """
         Given an CSV of pixels extracted using GPT(SNAP), filter the dataset and add some new columns.
 
@@ -358,26 +461,8 @@ class TsGenerator:
         df = self.update_df(df=raw_df,
                             ir_min_threshold=ir_min_threshold,
                             ir_max_threshold=ir_max_threshold,
-                            max_aot=max_aot)
-
-        ##############
-        # CAMS PROXY #
-        ##############
-        if cams_val:
-            # compute simple agreement:
-            df['aot-cams'] = df['T865:float'] - cams_val
-            # get the position of the clusters:
-            if (len(df['Oa08_reflectance:float'].unique()) < 2) and (len(df) < 4):
-                file_id_date_name = os.path.basename(csv_path).split('____')[1].split('_')[0]
-                print(f'Skipping KDE stats for lack of data @ {file_id_date_name}')
-                return 'KDE_fail', file_id_date_name
-
-            x = df['Oa08_reflectance:float'].copy()
-            pk, xray, yray, kde_res = self.kde_local_maxima(x)
-            xmean = np.mean(x)
-            kdemaxes = [m for m in xray[pk]]
-            kdemaxes.append(xmean)
-            drop_threshold = min(kdemaxes)
+                            max_aot=max_aot,
+                            cams_val=cams_val)
 
         #########################
         # KDE TEST FOR Oa08 RED #
@@ -408,6 +493,8 @@ class TsGenerator:
         # Fix the indexing of the dataframe #
         #####################################
         df.reset_index(drop=True, inplace=True)
+
+
 
         # Save V2
         if savepath:
@@ -1364,3 +1451,362 @@ if __name__ == '__main__':
                                  save_title=save_file)
 
     # python tsgen.py "D:\processing\win\COARI" "D:\processing\win\coari-ts.csv" "D:\processing\win\coari-ts-plot.png"
+
+{'20160228': 181.99,
+ '20160228': 236.76,
+ '20160228': 310.31,
+ '20160228': 425.33,
+ '20160228': 198.97,
+ '20170206': 216.14,
+ '20170206': 258.87,
+ '20170206': 151.97,
+ '20170410': 76.60,
+ '20170410': 104.40,
+ '20170410': 48.20,
+ '20171006': 77.89,
+ '20171006': 102.13,
+ '20171006': 86.14,
+ '20180203': 178.80,
+ '20180203': 319.23,
+ '20180203': 216.56,
+ '20180316': 149.20,
+ '20180316': 198.00,
+ '20180316': 178.80,
+ '20180316': 100.60,
+ '20180426': 147.20,
+ '20180426': 189.60,
+ '20180426': 169.20,
+ '20180426': 102.40,
+ '20180525': 103.00,
+ '20180525': 119.40,
+ '20180525': 66.00,
+ '20180525': 66.80,
+ '20180614': 76.00,
+ '20180614': 70.80,
+ '20180614': 114.60,
+ '20180614': 60.20,
+ '20180722': 8.20,
+ '20180722': 7.20,
+ '20180722': 71.60,
+ '20180722': 42.40,
+ '20180904': 40.80,
+ '20180904': 64.60,
+ '20180904': 85.00,
+ '20180904': 40.20,
+ '20190214': 121.40,
+ '20190214': 172.80,
+ '20190214': 215.80,
+ '20190214': 133.80,
+ '20190312': 98.00,
+ '20190312': 174.20,
+ '20190312': 119.80,
+ '20190312': 71.80,
+ '20190421': 50.60,
+ '20190421': 23.00,
+ '20190421': 49.60,
+ '20190421': 19.80,
+ '20190517': 27.60,
+ '20190517': 59.60,
+ '20190517': 54.80,
+ '20190517': 30.60,
+ '20190621': 28.60,
+ '20190621': 40.60,
+ '20190621': 35.80,
+ '20190621': 18.80,
+ '20190718': 34.60,
+ '20190718': 46.00}
+
+vld_andre_rrs = {
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+05/12/17
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+14/02/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+13/03/19
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+26/04/18
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+21/04/19
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+25/05/18
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+17/05/19
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+14/06/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+04/09/18
+
+}

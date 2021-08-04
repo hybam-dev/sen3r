@@ -440,6 +440,7 @@ class NcExplorer:
 
         return xy_vertices, vertices
 
+
     def get_raster_mask(self, xy_vertices):
         """
         Creates a boolean mask of 0 and 1 with the polygons using the nc resolution.
@@ -497,14 +498,13 @@ class NcExplorer:
         # self.rgb = np.vstack((red, green, blue))
         return red, green, blue
 
-
     def get_data_in_poly(self, poly_path, go_parallel=True):
         """
         Given an input polygon and image, return a dataframe containing
         the data of the image that falls inside the polygon.
         """
         # I) Convert the lon/lat polygon into a x/y poly:
-        xy_vert, ll_vert = self.get_xy_polygon_from_json(poly_path=poly_path, parallel=go_parallel)
+        xy_vert, ll_vert = self.get_xy_polygon_from_json(poly_path=poly_path)
 
         # II) Use the poly to generate an extraction mask:
         mask, cc, rr = self.get_raster_mask(xy_vertices=xy_vert)
@@ -558,6 +558,68 @@ class NcExplorer:
         if len(df) == 0:
             print('EMPTY DATAFRAME WARNING! Unable to find valid pixels in file.')
         return df
+
+    # TODO: SEN3R version
+    # def fix_get_data_in_poly(self, poly_path, go_parallel=True):
+    #     """
+    #     Given an input polygon and image, return a dataframe containing
+    #     the data of the image that falls inside the polygon.
+    #     """
+    #     # I) Convert the lon/lat polygon into a x/y poly:
+    #     xy_vert, ll_vert = self.get_xy_polygon_from_json(poly_path=poly_path, parallel=go_parallel)
+    #
+    #     # II) Use the poly to generate an extraction mask:
+    #     mask, cc, rr = self.get_raster_mask(xy_vertices=xy_vert)
+    #
+    #     # III) Get the dictionary of available bands based on the product:
+    #     if self.product.lower() == 'wfr':
+    #         bdict = self.wfr_files
+    #     elif self.product.lower() == 'syn':
+    #         bdict = self.syn_files
+    #     else:
+    #         print(f'Invalid product: {self.product.upper()}.')
+    #         sys.exit(1)
+    #
+    #     if go_parallel:
+    #         pbe = ParallelBandExtract()
+    #         extracted_bands = pbe.parallel_get_bdata_in_nc(rr, cc, self.g_lon, self.g_lat,
+    #                                                        self.nc_folder, self.wfr_files_p)
+    #         return extracted_bands
+    #
+    #     else:
+    #         # IV) Generate the dataframe (NON-PARALLEL):
+    #         custom_subset = {'x': rr, 'y': cc}
+    #         df = pd.DataFrame(custom_subset)
+    #         print('extracting: LON / LAT')
+    #         df['lat'] = [self.g_lat[x, y] for x, y in zip(df['x'], df['y'])]
+    #         df['lon'] = [self.g_lon[x, y] for x, y in zip(df['x'], df['y'])]
+    #         print('extracting: OAA / OZA / SAA / SZA')
+    #         df['OAA'] = [self.OAA[x, y] for x, y in zip(df['x'], df['y'])]
+    #         df['OZA'] = [self.OZA[x, y] for x, y in zip(df['x'], df['y'])]
+    #         df['SAA'] = [self.SAA[x, y] for x, y in zip(df['x'], df['y'])]
+    #         df['SZA'] = [self.SZA[x, y] for x, y in zip(df['x'], df['y'])]
+    #
+    #         # V) Populate the DF with data from the other bands:
+    #         for k in bdict:
+    #             ds = nc.Dataset(self.nc_folder/k)
+    #             for layer in bdict[k]:
+    #                 print(f'extracting: {layer}')
+    #                 band = ds[layer][:].data
+    #                 df[layer] = [band[x, y] for x, y in zip(df['x'], df['y'])]
+    #
+    #     idx_names = df[df['Oa08_reflectance'] == 65535.0].index
+    #     df.drop(idx_names, inplace=True)
+    #
+    #     if self.product.lower() == 'wfr':
+    #         df = df.rename(columns=self.wfr_vld_names)
+    #
+    #     # TODO: check necessity of renaming SYNERGY colnames.
+    #     # if self.product.lower() == 'syn':
+    #     #     df = df.rename(columns=self.syn_vld_names)
+    #
+    #     if len(df) == 0:
+    #         print('EMPTY DATAFRAME WARNING! Unable to find valid pixels in file.')
+    #     return df
 
     # TODO: this is very specific, make it more generic.
     def plot_s3_lv2_reflectances(self, radiance_list, icor, band_radiances, figure_title):
