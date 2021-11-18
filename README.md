@@ -76,7 +76,7 @@ sen3r -s -i "C:\PATH\TO\L2_WFR_IMG" -o "C:\sen3r_out" -r "C:\path\to\your_vector
 ```
 
 ## Citing
-While the official paper is published, for the time being you can use the Zenodo citation:
+While the official paper is not published you can use the Zenodo citation:
 
 Franca, & Martinez. (2021). daviguima/sen3r: Zenodo (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5710870
 
