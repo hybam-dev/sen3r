@@ -338,6 +338,10 @@ class Core:
         # indexNames = series_df[series_df['B17-865'] < irmin].index
         # series_df.drop(indexNames, inplace=True)
 
+        # Compute the avg. SPM
+        series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'],
+                                             band665=series_df['B8-665'])
+
         # create empty excel
         wb = openpyxl.Workbook()
         wb.save(excel_save_path)
