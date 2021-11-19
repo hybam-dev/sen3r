@@ -78,13 +78,15 @@ sen3r -s -i "C:\PATH\TO\L2_WFR_IMG" -o "C:\sen3r_out" -r "C:\path\to\your_vector
 ## Citing
 While the official paper is not published you can use the Zenodo citation:
 
-Franca, & Martinez. (2021). daviguima/sen3r: Zenodo (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5710870
+Franca, David, Martinez, Jean-Michel, & Cordeiro, Mauricio. (2021). SEN3R - Sentinel 3 Reflectance Retrieval over Rivers (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5710870
 
 or the BibTex:
 ```
-@software{franca_2021_5710870,
-  author       = {Franca and Martinez},
-  title        = {daviguima/sen3r: Zenodo},
+@software{franca_david_2021_5710870,
+  author       = {Franca, David and Martinez, Jean-Michel and
+                  Cordeiro, Mauricio},
+  title        = {{SEN3R - Sentinel 3 Reflectance Retrieval over 
+                   Rivers}},
   month        = nov,
   year         = 2021,
   publisher    = {Zenodo},
