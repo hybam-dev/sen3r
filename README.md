@@ -1,17 +1,18 @@
+[![DOI](https://zenodo.org/badge/233877233.svg)](https://zenodo.org/badge/latestdoi/233877233)
+[![PyPI version](https://badge.fury.io/py/sen3r.svg)](https://badge.fury.io/py/sen3r)
 ## SEN3R - Sentinel 3 Reflectance Retrieval over Rivers
 
-SEN3R is a stand-alone command-line utility made to simplify the pipeline of image 
-processing over ESA's Sentinel-3 mission without the hassle of installing [SNAP](https://step.esa.int/main/toolboxes/snap/) as a dependency 
-(We have no intention of replacing SNAP). 
+SEN3R is a stand-alone command-line utility inspired by [MOD3R](https://hybam.obs-mip.fr/software-2/) and made to simplify the pipeline of image 
+processing over ESA's Sentinel-3 mission. 
 <br>
 <br>
-[!] WARNING: GDAL is a requirement for the installation, therefore, 
+⚠️ GDAL is a requirement for the installation, therefore, 
 usage of a conda environment 
 ([Anaconda.org](https://www.anaconda.com/products/individual)) 
 is strongly recommended. Unless you know what you are doing (-:
-<br>
-<br>
-Create a Conda environment (not all python versions above 3.7 were tested but they should also be compatible):
+
+## Installation
+Create a Conda environment (python versions above 3.7 were not tested but they should also be compatible):
 ```
 conda create --name sen3r python=3.7
 ```
@@ -25,9 +26,9 @@ conda install -c conda-forge gdal
 ```
 Install the requirements:
 ```
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
-Run the setup:
+We recommend you to run the internal setup (more up-to-date) but you can also use PyPI `pip install sen3r`:
 ```
 python setup.py install 
 ```
@@ -38,10 +39,11 @@ sen3r -h
 If all runs well, you should see:
 ```
 (sen3r) D:\user_path\sen3r>sen3r -h
-usage: main.py [-h] [-i INPUT] [-o OUT] [-r ROI] [-p PRODUCT] [-c CAMS] [-k CLUSTER] [-ng] [-np] [-s] [-v]
+usage: sen3r [-h] [-i INPUT] [-o OUT] [-r ROI] [-p PRODUCT] [-c CAMS]
+             [-k CLUSTER] [-s] [-v]
 
-SEN3R (Sentinel-3 Reflectance Retrieval over Rivers) enables extraction of reflectance time series from Sentinel-3 L2 WFR images
-over water bodies.
+SEN3R (Sentinel-3 Reflectance Retrieval over Rivers) enables extraction of
+reflectance time series from Sentinel-3 L2 WFR images over water bodies.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -54,17 +56,16 @@ optional arguments:
   -c CAMS, --cams CAMS  Path to search for auxiliary CAMS file. Optional.
   -k CLUSTER, --cluster CLUSTER
                         Which method to use for clustering. Optional.
-  -ng, --no-graphics    Do not generate graphical reports.
-  -np, --no-pdf         Do not generate PDF report.
-  -s, --single          Single mode: run SEN3R over only one image instead of a whole directory. Optional.
+  -s, --single          Single mode: run SEN3R over only one image instead of
+                        a whole directory. Optional.
   -v, --version         Displays current package version.
 ```
-[!]
-For OS compatibility reasons the supported vector formats for `-r` are `.json` and `.geojson` but there are
-implementations in the code to also support: `.shp`, `.kml` and `.kmz`. Just check for them 
-inside `commons.py` > `Utils` > `roi2vertex`.
 
-Usage (for a folder of WFR files):
+Windows users: For OS compatibility reasons the supported vector formats for `-r` are `.json` and `.geojson`. But if you are under Linux there are implementations in the code to also support `.shp`, `.kml` and `.kmz`. Just check for them inside `commons.py` > `Utils` > `roi2vertex`.
+
+## Usage 
+
+For a folder of WFR files:
 ```
 sen3r -i "C:\PATH\TO\L2_WFR_FILES" -o "C:\sen3r_out" -r "C:\path\to\your_vector.json"
 ```
@@ -72,4 +73,23 @@ sen3r -i "C:\PATH\TO\L2_WFR_FILES" -o "C:\sen3r_out" -r "C:\path\to\your_vector.
 For a single WFR file:
 ```
 sen3r -s -i "C:\PATH\TO\L2_WFR_IMG" -o "C:\sen3r_out" -r "C:\path\to\your_vector.json"
+```
+
+## Citing
+While the official paper is not published you can use the Zenodo citation:
+
+Franca, & Martinez. (2021). daviguima/sen3r: Zenodo (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5710870
+
+or the BibTex:
+```
+@software{franca_2021_5710870,
+  author       = {Franca and Martinez},
+  title        = {daviguima/sen3r: Zenodo},
+  month        = nov,
+  year         = 2021,
+  publisher    = {Zenodo},
+  version      = {v1.0.0},
+  doi          = {10.5281/zenodo.5710870},
+  url          = {https://doi.org/10.5281/zenodo.5710870}
+}
 ```
