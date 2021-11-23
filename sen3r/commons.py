@@ -5,7 +5,7 @@ import json
 import logging
 import zipfile
 import subprocess
-from osgeo import ogr
+from osgeo import ogr, osr
 import numpy as np
 from pathlib import Path
 
@@ -546,6 +546,63 @@ class Footprinter:
                     result['cols'] = int(line.split('</')[0].split('>')[1])
         return result
 
+    @staticmethod
+    def _gml2shp(gml_in, shp_out):
+        # https://pcjericks.github.io/py-gdalogr-cookbook/vector_layers.html#create-a-new-layer-from-the-extent-of-an-existing-layer
+        # Get the Layer's Geometry
+        inGMLfile = gml_in
+        inDriver = ogr.GetDriverByName("GML")
+        inDataSource = inDriver.Open(inGMLfile, 0)
+        inLayer = inDataSource.GetLayer()
+        feature = inLayer.GetNextFeature()
+        geometry = feature.GetGeometryRef()
+
+        # Get the list of coordinates from the footprint
+        json_footprint = json.loads(geometry.ExportToJson())
+        footprint = json_footprint['coordinates'][0]
+
+        # Create a Polygon from the extent tuple
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+
+        for point in footprint:
+            ring.AddPoint(point[0], point[1])
+
+        poly = ogr.Geometry(ogr.wkbPolygon)
+        poly.AddGeometry(ring)
+
+        # Save extent to a new Shapefile
+        outShapefile = shp_out
+        outDriver = ogr.GetDriverByName("ESRI Shapefile")
+
+        # Remove output shapefile if it already exists
+        if os.path.exists(outShapefile):
+            outDriver.DeleteDataSource(outShapefile)
+
+        # create the spatial reference, WGS84
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(4326)
+
+        # Create the output shapefile
+        outDataSource = outDriver.CreateDataSource(outShapefile)
+        outLayer = outDataSource.CreateLayer("s3_footprint", srs, geom_type=ogr.wkbPolygon)
+
+        # Add an ID field
+        idField = ogr.FieldDefn("id", ogr.OFTInteger)
+        outLayer.CreateField(idField)
+
+        # Create the feature and set values
+        featureDefn = outLayer.GetLayerDefn()
+        feature = ogr.Feature(featureDefn)
+        feature.SetGeometry(poly)
+        feature.SetField("id", 1)
+        outLayer.CreateFeature(feature)
+        feature = None
+
+        # Save and close DataSource
+        inDataSource = None
+        outDataSource = None
+        pass
+
     def manifest2shp(self, xfdumanifest, filename):
         '''
         Given a .SEN3/xfdumanifest.xml and a filename, generates a .shp and a .gml
@@ -558,8 +615,11 @@ class Footprinter:
         # write the gml_data from the dict to an actual .gml file
         with open(xmldict['gml_path'], 'w') as gmlfile:
             gmlfile.write(xmldict['gml_data'])
+        # DEPRECATED:
         # call the ogr2ogr.py script to generate a .shp from a .gml
         # ogr2ogr.main(["", "-f", "ESRI Shapefile", xmldict['shp_path'], xmldict['gml_path']])
+
+        self._gml2shp(xmldict['gml_path'], xmldict['shp_path'])
         return xmldict
 
     @staticmethod
@@ -607,3 +667,31 @@ class Footprinter:
         proc.wait()
         print(f'{figdate} done.')
         return True
+
+    @staticmethod
+    def touch_test(footprint_shp, roi_shp):
+        """
+        Given two input shapefiles, one from the Sentinel-3 image footprint and the other
+        from the user region of interest. Test if the touch each other.
+        """
+        inDriver = ogr.GetDriverByName("ESRI Shapefile")
+
+        foot_ds = inDriver.Open(footprint_shp, 0)
+        layer_foot = foot_ds.GetLayer()
+        feature_foot = layer_foot.GetNextFeature()
+        geometry_foot = feature_foot.GetGeometryRef()
+
+        data = ogr.Open(roi_shp)
+
+        # Adapted from https://gist.github.com/CMCDragonkai/e7b15bb6836a7687658ec2bb3abd2927
+        for layer in data:
+            # this is the one where featureindex may not start at 0
+            layer.ResetReading()
+            for feature in layer:
+                geometry_roi = feature.geometry()
+                intersection = geometry_roi.Intersection(geometry_foot)
+                if not intersection.IsEmpty():
+                    return True
+
+        # This will only run if no geometry from the ROI touched the S3 footprint.
+        return False
