@@ -7,7 +7,7 @@ README = os.path.join(os.path.dirname(__file__), 'README.md')
 setup(name='sen3r',
       version=sen3r.__version__,
       description='SEN3R (Sentinel-3 Reflectance Retrieval over Rivers) enables extraction of reflectance time series from images over water bodies.',
-      long_description=open(README).read(),
+      long_description=open(README, encoding='utf-8').read(),
       long_description_content_type='text/markdown',
       author="David Guimarães",
       author_email="dvdgmf@gmail.com",

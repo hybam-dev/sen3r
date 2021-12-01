@@ -559,7 +559,7 @@ class TsGenerator:
             Oa18_reflectance_tms.append(means_dict['Oa18_reflectance:float'])
             Oa21_reflectance_tms.append(means_dict['Oa21_reflectance:float'])
 
-            Oa17_median_tms.append(means_dict['median_IR'])
+            # Oa17_median_tms.append(means_dict['median_IR'])
 
             OAA_tms.append(means_dict['OAA:float'])
             OZA_tms.append(means_dict['OZA:float'])
@@ -611,7 +611,7 @@ class TsGenerator:
                  'B18-885': Oa18_reflectance_tms,
                  'B21-1020': Oa21_reflectance_tms,
 
-                 'IR-median': Oa17_median_tms,
+                 # 'IR-median': Oa17_median_tms,
 
                  'OAA': OAA_tms,
                  'OZA': OZA_tms,
@@ -634,18 +634,20 @@ class TsGenerator:
                  'T865.50%tile': T865tile50_tms,
                  'T865.75%tile': T865tile75_tms,
 
-                 'meanGlint': glint_tms,
-                 'Glintstd': glintstd_tms,
-                 'abs-vld-px': absvldpx_tms,
-                 'pct-vld-px': pctvlddpx_tms,
-                 'quality': quality_labels,
-                 'qality-info': qlinfo_labels}
+                 'Glint.mdn': glint_tms,
+                 'Glint.std': glintstd_tms,
+                 'Abs.vld.px': absvldpx_tms,
+                 '%.vld.px': pctvlddpx_tms,
+                 'Quality': quality_labels,
+                 'Qlt.desc.': qlinfo_labels}
 
         return d
 
     def s3l2_custom_reflectance_plot(self, df, figure_title=None, save_title=None, cbar=False, c_lbl='T865'):
         """
         # TODO: Write docstrings.
+        # TODO: Return a plot object so the notebook users can later decide on what to do with the output.
+        # https://stackoverflow.com/questions/43925337/matplotlib-returning-a-plot-object
         """
         plt.rcParams['figure.figsize'] = self.rcparam
         colnms = ['T865:float',
@@ -925,6 +927,8 @@ class TsGenerator:
 
         if not savepathname:
             plt.show()
+
+        return fig
 
     def plot_scattercluster(self, event_df, col_x='B17-865', col_y='B8-665', col_color='T865:float',
                             cluster_col='cluster', nx=None, ny=None, mplcolormap='viridis', title=None, savepath=None):

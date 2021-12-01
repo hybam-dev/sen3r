@@ -139,16 +139,20 @@ class Core:
         t1 = time.perf_counter()
         done_csvs = []
         for n, img in enumerate(self.sorted_file_list):
-            percent = int((n*100)/total)
+            percent = int((n * 100) / total)
             figdate = os.path.basename(img).split('____')[1].split('_')[0]
-            self.log.info(f'({percent}%) {n+1} of {total} - {figdate}')
-
-            band_data, img_data = self.get_s3_data(wfr_img_folder=img, vertices=self.vertices)
-            f_b_name = os.path.basename(img).split('.')[0]
-            out_dir = os.path.join(self.CSV_N1, f_b_name + '.csv')
-            self.log.info(f'Saving DF at : {out_dir}')
-            band_data.to_csv(out_dir, index=False)
-            done_csvs.append(out_dir)
+            self.log.info(f'({percent}%) {n + 1} of {total} - {figdate}')
+            try:
+                band_data, img_data = self.get_s3_data(wfr_img_folder=img, vertices=self.vertices)
+                f_b_name = os.path.basename(img).split('.')[0]
+                out_dir = os.path.join(self.CSV_N1, f_b_name + '.csv')
+                self.log.info(f'Saving DF at : {out_dir}')
+                band_data.to_csv(out_dir, index=False)
+                done_csvs.append(out_dir)
+            except FileNotFoundError as e404:
+                self.log.info(f'{e404}')
+                self.log.info(f'Skipping: {figdate}')
+                continue
 
         t2 = time.perf_counter()
         outputstr = f'>>> Finished in {round(t2 - t1, 2)} second(s). <<<'
