@@ -328,6 +328,10 @@ class Utils:
         idx = (np.abs(array - value)).argmin()
         return idx
 
+    # https://stackoverflow.com/questions/6039103/counting-depth-or-the-deepest-level-a-nested-list-goes-to
+    @staticmethod
+    def depth(somelist): return isinstance(somelist, list) and max(map(Utils.depth, somelist)) + 1
+
     def get_available_cores(self):
         cpu_count = os.cpu_count() - 1
         if cpu_count <= 0:
@@ -359,25 +363,33 @@ class Utils:
         return im_grid
 
     @staticmethod
-    def geojson_to_polygon(poly_or_path, read_file=True):
+    def geojson_to_polygon(geojson_path):
         """
         Transform a given input .geojson file into a list of coordinates
         poly_path: string (Path to .geojson file)
         return: dict (Containing one or several polygons depending on the complexity of the input .json)
         """
-        if read_file:
-            with open(poly_or_path) as f:
-                data = json.load(f)
-        else:
-            data = poly_or_path
+        with open(geojson_path) as f:
+            data = json.load(f)
 
-        poly_lst = []
-        for feature in data['features']:
-            poly = feature['geometry']['coordinates']
-            poly = np.array(poly[0])
-            poly_lst.append(poly)
+        inDriver = ogr.GetDriverByName("GeoJSON")
+        inDataSource = inDriver.Open(geojson_path, 0)
+        inLayer = inDataSource.GetLayer()
+        feature = inLayer.GetNextFeature()
 
-        vertices = [poly[:, :2] for poly in poly_lst]
+        vertices = []
+        for layer in inDataSource:
+            # this is the one where featureindex may not start at 0
+            layer.ResetReading()
+            for feature in layer:
+                geometry = feature.geometry()
+                json_geometry = json.loads(geometry.ExportToJson())
+                poly = json_geometry['coordinates'][0]
+                while Utils.depth(poly) > 2:
+                    poly = poly[0]
+                poly = [p[0:2] for p in poly]
+                poly = np.array(poly)
+                vertices.append(poly)
 
         return vertices
 
@@ -394,6 +406,11 @@ class Utils:
         with shapefile.Reader(shp_file_path) as shp:
             geojson_data = shp.__geo_interface__
         return geojson_data
+
+    @staticmethod
+    def shp2json_gdal(shp_file_path):
+
+        pass
 
     @staticmethod
     # KML -> GEOJson : https://github.com/mrcagney/kml2geojson

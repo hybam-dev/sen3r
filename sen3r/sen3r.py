@@ -150,6 +150,7 @@ class Core:
                 band_data.to_csv(out_dir, index=False)
                 done_csvs.append(out_dir)
             except FileNotFoundError as e404:
+                # If some Band.nc file was missing inside the image, move to the next one.
                 self.log.info(f'{e404}')
                 self.log.info(f'Skipping: {figdate}')
                 continue
@@ -370,6 +371,16 @@ class Core:
         # Get the sheet containing the final output
         ws = wb['wfr']
 
+        # Create a dictionary of column names
+        # https://stackoverflow.com/questions/51478413/select-a-column-by-its-name-openpyxl/51581162
+        ColNames = {}
+        Current = 0
+        for COL in ws.iter_cols(1, ws.max_column):
+            ColNames[COL[0].value] = Current
+            Current += 1
+
+        quality_column_position = ColNames['Quality']
+
         mod3r_colors = {0: '00FFFFFF',
                         1: '00008000',
                         2: '00FE6000',
@@ -377,7 +388,7 @@ class Core:
 
         for row in ws.iter_rows(min_row=2, min_col=None, max_col=None):
             # get the quality flag for the given row
-            flag_qlt = row[42]
+            flag_qlt = row[quality_column_position]
             for cell in row:
                 color_code = mod3r_colors[flag_qlt.value]
                 cell.fill = PatternFill(start_color=color_code, end_color=color_code, fill_type="solid")
