@@ -372,10 +372,8 @@ class Utils:
         with open(geojson_path) as f:
             data = json.load(f)
 
-        inDriver = ogr.GetDriverByName("GeoJSON")
-        inDataSource = inDriver.Open(geojson_path, 0)
+        inDataSource = ogr.GetDriverByName("GeoJSON").Open(geojson_path, 0)
         inLayer = inDataSource.GetLayer()
-        feature = inLayer.GetNextFeature()
 
         vertices = []
         for layer in inDataSource:
@@ -565,6 +563,9 @@ class Footprinter:
 
     @staticmethod
     def _gml2shp(gml_in, shp_out):
+        '''
+        given a .GML file (gml_in), convert it to a .SHP (shp_out).
+        '''
         # https://pcjericks.github.io/py-gdalogr-cookbook/vector_layers.html#create-a-new-layer-from-the-extent-of-an-existing-layer
         # Get the Layer's Geometry
         inGMLfile = gml_in
@@ -686,19 +687,35 @@ class Footprinter:
         return True
 
     @staticmethod
-    def touch_test(footprint_shp, roi_shp):
+    def touch_test(footprint_vector, roi_vector):
         """
-        Given two input shapefiles, one from the Sentinel-3 image footprint and the other
-        from the user region of interest. Test if the touch each other.
+        Given two input shapefiles (one Sentinel-3 image footprint and
+        the user region of interest), test if the touch each other.
         """
-        inDriver = ogr.GetDriverByName("ESRI Shapefile")
 
-        foot_ds = inDriver.Open(footprint_shp, 0)
+        footprint_vector_name = os.path.basename(footprint_vector).split('.')[1]
+        if footprint_vector_name.lower() == 'shp':
+            foot_ds = ogr.GetDriverByName("ESRI Shapefile").Open(footprint_vector, 0)
+        elif footprint_vector_name.lower() == 'json' or footprint_vector_name.lower() == 'geojson':
+            foot_ds = ogr.GetDriverByName("GeoJSON").Open(footprint_vector, 0)
+        else:
+            logging.info(f'Input ROI {os.path.basename(footprint_vector)} not recognized as a valid vector file. '
+                         f'Make sure the input file is of type .shp .json or .geojson and try again.')
+            sys.exit(1)
+
         layer_foot = foot_ds.GetLayer()
         feature_foot = layer_foot.GetNextFeature()
         geometry_foot = feature_foot.GetGeometryRef()
 
-        data = ogr.Open(roi_shp)
+        roi_type_name = os.path.basename(roi_vector).split('.')[1]
+        if roi_type_name.lower() == 'shp':
+            data = ogr.GetDriverByName("ESRI Shapefile").Open(roi_vector, 0)
+        elif roi_type_name.lower() == 'json' or roi_type_name.lower() == 'geojson':
+            data = ogr.GetDriverByName("GeoJSON").Open(roi_vector, 0)
+        else:
+            logging.info(f'Input ROI {os.path.basename(roi_vector)} not recognized as a valid vector file. '
+                         f'Make sure the input file is of type .shp .json or .geojson and try again.')
+            sys.exit(1)
 
         # Adapted from https://gist.github.com/CMCDragonkai/e7b15bb6836a7687658ec2bb3abd2927
         for layer in data:
