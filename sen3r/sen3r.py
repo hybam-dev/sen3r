@@ -8,7 +8,7 @@ from datetime import datetime
 import openpyxl
 from openpyxl.styles import PatternFill
 
-from sen3r.commons import Utils, DefaultDicts
+from sen3r.commons import Utils, DefaultDicts, Footprinter
 from sen3r.nc_engine import NcEngine, ParallelBandExtract
 from sen3r.tsgen import TsGenerator
 
@@ -56,69 +56,89 @@ class Core:
 
         return sorted_output_files_fullpath
 
-    def get_s3_data(self, wfr_img_folder, vertices=None, rgb=True, parallel=True):
+    def get_s3_data(self, wfr_img_folder, vertices=None, roi_file=None, rgb=True, parallel=True):
         """
         Given a vector and a S3_OL2_WFR image, extract the NC data inside the vector.
         """
         img_data = {}
         img = wfr_img_folder
+        process_flag = True
 
-        # Class instance of NcEngine containing information about all the bands.
-        nce = NcEngine(input_nc_folder=img, parent_log=self.log)
+        # Test if there is a footprint.shp file inside the image folder
+        footprint = Path(img / 'footprint.shp')
+        if footprint.is_file():
+            self.log.info('footprint.shp found inside image folder.')
+            # Test if the footprint.shp touches the user ROI
+            if not Footprinter.touch_test(footprint, roi_file):
+                # If touch_test returns False the ROI don't touch and the image can be skipped
+                process_flag = False
+            else:
+                self.log.info('User ROI touches footprint.shp, processing will continue.')
 
-        # Convert the input ROI LAT/LON vertices to X,Y coordinates based on the geo_coordinates.nc file
-        img_data['xy_vert'], img_data['ll_vert'] = nce.latlon_2_xy_poly(poly_path=vertices)
+        if process_flag:
+            # Class instance of NcEngine containing information about all the bands.
+            nce = NcEngine(input_nc_folder=img, parent_log=self.log)
 
-        # II) Use the poly to generate an extraction mask:
-        img_data['mask'], img_data['cc'], img_data['rr'] = nce.get_raster_mask(xy_vertices=img_data['xy_vert'])
+            # Convert the input ROI LAT/LON vertices to X,Y coordinates based on the geo_coordinates.nc file
+            img_data['xy_vert'], img_data['ll_vert'] = nce.latlon_2_xy_poly(poly_path=vertices)
 
-        # III) Get the dictionary of available bands based on the product:
-        if self.product and self.product.lower() == 'wfr':
-            img_data['bdict'] = dd.wfr_files
-        elif self.product and self.product.lower() == 'syn':
-            img_data['bdict'] = dd.syn_files
-        else:
-            self.log.info(f'Invalid product: {self.product.upper()}.')
-            sys.exit(1)
+            # II) Use the poly to generate an extraction mask:
+            img_data['mask'], img_data['cc'], img_data['rr'] = nce.get_raster_mask(xy_vertices=img_data['xy_vert'])
 
-        img_data['g_lon'] = nce.g_lon
-        img_data['g_lat'] = nce.g_lat
-        img_data['OAA'] = nce.OAA
-        img_data['OZA'] = nce.OZA
-        img_data['SAA'] = nce.SAA
-        img_data['SZA'] = nce.SZA
-        img_data['nc_file'] = nce.nc_folder
+            # III) Get the dictionary of available bands based on the product:
+            if self.product and self.product.lower() == 'wfr':
+                img_data['bdict'] = dd.wfr_files
+            elif self.product and self.product.lower() == 'syn':
+                img_data['bdict'] = dd.syn_files
+            else:
+                self.log.info(f'Invalid product: {self.product.upper()}.')
+                sys.exit(1)
 
-        # IV) Extract the data from the NetCDF using the mask
-        pbe = ParallelBandExtract()
-        df = pbe.nc_2_df(rr=img_data['rr'], cc=img_data['cc'],
-                         lon=img_data['g_lon'],
-                         lat=img_data['g_lat'],
-                         oaa=img_data['OAA'],
-                         oza=img_data['OZA'],
-                         saa=img_data['SAA'],
-                         sza=img_data['SZA'],
-                         nc_folder=img_data['nc_file'],
-                         wfr_files_p=dd.wfr_files_p,
-                         parent_log=self.arguments['logfile'])
+            img_data['g_lon'] = nce.g_lon
+            img_data['g_lat'] = nce.g_lat
+            img_data['OAA'] = nce.OAA
+            img_data['OZA'] = nce.OZA
+            img_data['SAA'] = nce.SAA
+            img_data['SZA'] = nce.SZA
+            img_data['nc_file'] = nce.nc_folder
 
-        if self.product.lower() == 'wfr':
-            df = df.rename(columns=dd.wfr_vld_names)
+            # IV) Extract the data from the NetCDF using the mask
+            pbe = ParallelBandExtract()
+            df = pbe.nc_2_df(rr=img_data['rr'], cc=img_data['cc'],
+                             lon=img_data['g_lon'],
+                             lat=img_data['g_lat'],
+                             oaa=img_data['OAA'],
+                             oza=img_data['OZA'],
+                             saa=img_data['SAA'],
+                             sza=img_data['SZA'],
+                             nc_folder=img_data['nc_file'],
+                             wfr_files_p=dd.wfr_files_p,
+                             parent_log=self.arguments['logfile'])
 
-        # TODO: check necessity of renaming SYNERGY colnames.
-        # if self.product.lower() == 'syn':
-        #     df = df.rename(columns=self.syn_vld_names)
+            if self.product.lower() == 'wfr':
+                df = df.rename(columns=dd.wfr_vld_names)
 
-        if len(df) == 0:
-            self.log.info('EMPTY DATAFRAME WARNING! Unable to find valid pixels in file.')
+            # TODO: check necessity of renaming SYNERGY colnames.
+            # if self.product.lower() == 'syn':
+            #     df = df.rename(columns=self.syn_vld_names)
 
-        img_data['colors'] = {}
-        img_data['img'] = None
-        if rgb:
-            img_data['colors']['red'], img_data['colors']['green'], img_data['colors']['blue'], img_data[
-                'img'] = nce.get_rgb_from_poly(xy_vertices=img_data['xy_vert'])
+            if len(df) == 0:
+                self.log.info('EMPTY DATAFRAME WARNING! Unable to find valid pixels in file.')
 
+            img_data['colors'] = {}
+            img_data['img'] = None
+            if rgb:
+                img_data['colors']['red'], img_data['colors']['green'], img_data['colors']['blue'], img_data[
+                    'img'] = nce.get_rgb_from_poly(xy_vertices=img_data['xy_vert'])
+
+            return df, img_data
+
+        # This part of the code should only run in case the image was skipped by the touch_test().
+        self.log.info('WARNING: DATAFRAME SKIPPED! User region of interest does not touch footprint.shp coordinates.')
+        df = pd.DataFrame(columns=list(dd.wfr_vld_names.values()))
         return df, img_data
+
+
 
     def build_raw_csvs(self):
         """
@@ -143,7 +163,7 @@ class Core:
             figdate = os.path.basename(img).split('____')[1].split('_')[0]
             self.log.info(f'({percent}%) {n + 1} of {total} - {figdate}')
             try:
-                band_data, img_data = self.get_s3_data(wfr_img_folder=img, vertices=self.vertices)
+                band_data, img_data = self.get_s3_data(wfr_img_folder=img, vertices=self.vertices, roi_file=self.ROI)
                 f_b_name = os.path.basename(img).split('.')[0]
                 out_dir = os.path.join(self.CSV_N1, f_b_name + '.csv')
                 self.log.info(f'Saving DF at : {out_dir}')
