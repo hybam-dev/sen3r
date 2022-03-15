@@ -65,7 +65,7 @@ class Core:
         process_flag = True
 
         # Test if there is a footprint.shp file inside the image folder
-        footprint = Path(img / 'footprint.shp')
+        footprint = Path(img) / 'footprint.shp'
         if footprint.is_file():
             self.log.info('footprint.shp found inside image folder.')
             # Test if the footprint.shp touches the user ROI
