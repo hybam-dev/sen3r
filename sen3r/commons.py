@@ -692,6 +692,9 @@ class Footprinter:
         Given two input shapefiles (one Sentinel-3 image footprint and
         the user region of interest), test if the touch each other.
         """
+        # Hotfix: GDAL does not open Path objects, they must be cast to strings
+        footprint_vector = str(footprint_vector)
+        roi_vector = str(roi_vector)
 
         footprint_vector_name = os.path.basename(footprint_vector).split('.')[1]
         if footprint_vector_name.lower() == 'shp':
