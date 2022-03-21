@@ -19,7 +19,9 @@ import matplotlib
 import matplotlib.cm as cm
 from sen3r.commons import DefaultDicts, Utils
 
+matplotlib.use('Agg')
 dd = DefaultDicts()
+
 
 class TsGenerator:
 
