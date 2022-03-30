@@ -13,6 +13,13 @@ def main():
     """
     Entry point for the SEN3R package. Call sen3r -h or --help to see further options.
     """
+
+    # ,--------------,
+    # | Start timers |--------------------------------------------------------------------------------------------------
+    # '--------------'
+    Utils.tic()
+    t1 = time.perf_counter()
+
     parser = argparse.ArgumentParser(
         description='SEN3R (Sentinel-3 Reflectance Retrieval over Rivers) '
                     'enables extraction of reflectance time series from Sentinel-3 L2 WFR images over water bodies.')
@@ -66,19 +73,6 @@ def main():
             else:
                 s3r.process_csv_list(raw_csv_list=doneList, k_method=s3r.arguments['cluster'])
 
-    pass
-
-
-if __name__ == '__main__':
-    # ,--------------,
-    # | Start timers |--------------------------------------------------------------------------------------------------
-    # '--------------'
-    Utils.tic()
-    t1 = time.perf_counter()
-    # ,-----,
-    # | RUN |-----------------------------------------------------------------------------------------------------------
-    # '-----'
-    main()
     # ,------------------------------,
     # | End timers and report to log |----------------------------------------------------------------------------------
     # '------------------------------'
@@ -88,3 +82,13 @@ if __name__ == '__main__':
     final_message = f'Elapsed execution time: {t_hour}h : {t_min}m : {t_sec}s'
     print(outputstr)
     print(final_message)
+
+    pass
+
+
+if __name__ == '__main__':
+    # ,-----,
+    # | RUN |-----------------------------------------------------------------------------------------------------------
+    # '-----'
+    main()
+
