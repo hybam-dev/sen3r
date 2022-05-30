@@ -1,10 +1,13 @@
 import os
 import sys
 import logging
+import pyresample
 import netCDF4 as nc
 import numpy as np
 import concurrent.futures
 import pandas as pd
+
+from datetime import datetime
 from skimage.draw import polygon
 from pathlib import Path
 from skimage.transform import resize
@@ -27,6 +30,11 @@ class NcEngine:
         self.nc_base_name = os.path.basename(input_nc_folder).split('.')[0]
         self.product = product.lower()
         self.netcdf_valid_band_list = self.get_valid_band_files(rad_only=False)
+
+        if not self.log:
+            TIME_TAG = datetime.now().strftime('%Y%m%dT%H%M%S')
+            locallogpath = os.path.join(os.getcwd(), f'sen3r_ncengine_{TIME_TAG}.log')
+            self.log = utils.create_log_handler(locallogpath)
 
         if self.product.lower() == 'wfr':
             self.log.info(f'{os.getpid()} - Initializing geometries for: {self.nc_base_name}')
