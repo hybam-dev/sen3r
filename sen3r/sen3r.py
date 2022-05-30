@@ -138,8 +138,6 @@ class Core:
         df = pd.DataFrame(columns=list(dd.wfr_vld_names.values()))
         return df, img_data
 
-
-
     def build_raw_csvs(self):
         """
         Parse the input arguments and return a path containing the output intermediary files.
@@ -366,6 +364,8 @@ class Core:
         # Compute the avg. SPM
         series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'],
                                              band665=series_df['B8-665'])
+
+        series_df['SPM.median'] = df['SPM'].median()
 
         # create empty excel
         wb = openpyxl.Workbook()
