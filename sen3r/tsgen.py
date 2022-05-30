@@ -332,8 +332,7 @@ class TsGenerator:
         peak_position = list(ma)
         return peak_position, xray, yray, kde_res
 
-    @staticmethod
-    def get_mean_and_clean(image_path):
+    def get_mean_and_clean(self, image_path):
         """
         # TODO: Write docstrings.
         """
@@ -373,6 +372,7 @@ class TsGenerator:
 
         # get the std deviation of the specific column
         glintstd = df.loc[:, 'GLINT'].std(skipna=True)
+
         result_dict = {}
 
         if len(df) > 0:
@@ -384,10 +384,11 @@ class TsGenerator:
             df = df.drop(['latitude:double', 'longitude:double', 'ABSVLDPX'], axis=1)
 
             for colname in df:
-                # result_dict[colname] = df[colname].mean(skipna=True)
                 result_dict[colname] = df[colname].median(skipna=True)
 
-            result_dict['median_IR'] = np.nanmedian(df['Oa17_reflectance:float'])
+            result_dict['B8.std'] = df.loc[:, 'Oa08_reflectance:float'].std(skipna=True)
+            result_dict['B17.std'] = df.loc[:, 'Oa17_reflectance:float'].std(skipna=True)
+
             result_dict['AbsVldPx'] = validpx
             result_dict['VldPx.pct'] = pctvalidpx
             result_dict['GLINT.std'] = glintstd
@@ -433,7 +434,6 @@ class TsGenerator:
             result_dict['Oa17_reflectance:float'] = 0
             result_dict['Oa18_reflectance:float'] = 0
             result_dict['Oa21_reflectance:float'] = 0
-            result_dict['median_IR'] = 0
             result_dict['OAA:float'] = 0
             result_dict['OZA:float'] = 0
             result_dict['SAA:float'] = 0
@@ -489,7 +489,8 @@ class TsGenerator:
         Oa18_reflectance_tms = []
         Oa21_reflectance_tms = []
 
-        Oa17_median_tms = []
+        Oa08_std_tms = []
+        Oa17_std_tms = []
 
         OAA_tms = []
         OZA_tms = []
@@ -561,7 +562,8 @@ class TsGenerator:
             Oa18_reflectance_tms.append(means_dict['Oa18_reflectance:float'])
             Oa21_reflectance_tms.append(means_dict['Oa21_reflectance:float'])
 
-            # Oa17_median_tms.append(means_dict['median_IR'])
+            Oa08_std_tms.append(means_dict['B8.std'])
+            Oa17_std_tms.append(means_dict['B17.std'])
 
             OAA_tms.append(means_dict['OAA:float'])
             OZA_tms.append(means_dict['OZA:float'])
@@ -613,7 +615,8 @@ class TsGenerator:
                  'B18-885': Oa18_reflectance_tms,
                  'B21-1020': Oa21_reflectance_tms,
 
-                 # 'IR-median': Oa17_median_tms,
+                 'B8.std': Oa08_std_tms,
+                 'B17.std': Oa17_std_tms,
 
                  'OAA': OAA_tms,
                  'OZA': OZA_tms,
