@@ -386,8 +386,16 @@ class TsGenerator:
             for colname in df:
                 result_dict[colname] = df[colname].median(skipna=True)
 
-            result_dict['B8.std'] = df.loc[:, 'Oa08_reflectance:float'].std(skipna=True)
-            result_dict['B17.std'] = df.loc[:, 'Oa17_reflectance:float'].std(skipna=True)
+            b8_desc = df.loc[:, 'Oa08_reflectance:float'].describe()
+            b17_desc = df.loc[:, 'Oa17_reflectance:float'].describe()
+
+            # STD.Dev needs more than a single value.
+            if list(b8_desc)[0] > 1:
+                _, _, result_dict['B8.std'], *others = list(b8_desc)
+                _, _, result_dict['B17.std'], *others = list(b17_desc)
+            else:
+                result_dict['B8.std'] = 0
+                result_dict['B17.std'] = 0
 
             result_dict['AbsVldPx'] = validpx
             result_dict['VldPx.pct'] = pctvalidpx
@@ -454,6 +462,8 @@ class TsGenerator:
             result_dict['T865.75%ile'] = 0
             result_dict['GLINT'] = 0
             result_dict['GLINT.std'] = 0
+            result_dict['B8.std'] = 0
+            result_dict['B17.std'] = 0
             result_dict['AbsVldPx'] = 0
             result_dict['VldPx.pct'] = 0
 
