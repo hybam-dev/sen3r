@@ -1,5 +1,5 @@
 [![DOI](https://zenodo.org/badge/233877233.svg)](https://zenodo.org/badge/latestdoi/233877233)
-[![PyPI version](https://badge.fury.io/py/sen3r@2x.png)](https://badge.fury.io/py/sen3r)
+[![PyPI version](https://badge.fury.io/py/sen3r.svg)](https://badge.fury.io/py/sen3r)
 ## SEN3R - Sentinel 3 Reflectance Retrieval over Rivers
 
 SEN3R is a stand-alone command-line utility inspired by [MOD3R](https://hybam.obs-mip.fr/software-2/) and made to simplify the pipeline of image 
