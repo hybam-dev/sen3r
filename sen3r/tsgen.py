@@ -270,7 +270,7 @@ class TsGenerator:
 
     def update_csvs(self, csv_path, glint=20.0, savepath=False,
                     ir_min_threshold=False,
-                    ir_max_threshold=0.2,
+                    ir_max_threshold=False,
                     max_aot=False,
                     GPT=False,
                     cams_val=False,
