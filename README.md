@@ -1,5 +1,5 @@
 [![DOI](https://zenodo.org/badge/233877233.svg)](https://zenodo.org/badge/latestdoi/233877233)
-[![PyPI version](https://badge.fury.io/py/sen3r.svg)](https://badge.fury.io/py/sen3r)
+[![PyPI version](https://badge.fury.io/py/sen3r@2x.png)](https://badge.fury.io/py/sen3r)
 ## SEN3R - Sentinel 3 Reflectance Retrieval over Rivers
 
 SEN3R is a stand-alone command-line utility inspired by [MOD3R](https://hybam.obs-mip.fr/software-2/) and made to simplify the pipeline of image 
@@ -54,6 +54,10 @@ optional arguments:
   -p PRODUCT, --product PRODUCT
                         Currently only WFR is available.
   -c CAMS, --cams CAMS  Path to search for auxiliary CAMS file. Optional.
+  -min IRMIN, --irmin IRMIN
+                        Default bottom dropping threshold for IR. Optional.
+  -max IRMAX, --irmax IRMAX
+                        Default upper dropping threshold for IR. Optional.
   -k CLUSTER, --cluster CLUSTER
                         Which method to use for clustering. Optional.
   -s, --single          Single mode: run SEN3R over only one image instead of
