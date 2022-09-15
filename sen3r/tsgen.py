@@ -268,8 +268,6 @@ class TsGenerator:
 
         return df
 
-    # manacapuru 0.2
-    # negro 0.001
     def update_csvs(self, csv_path, glint=20.0, savepath=False,
                     ir_min_threshold=False,
                     ir_max_threshold=0.2,

@@ -200,19 +200,17 @@ class Core:
         band_data.to_csv(out_dir, index=False)
         return band_data, img_data, [out_dir]
 
-    def process_csv_list(self, raw_csv_list, irmax=0.2, use_cams=False, do_clustering=True, k_method='M4'):
+    def process_csv_list(self, raw_csv_list, irmin=False, irmax=False, use_cams=False, do_clustering=True, k_method='M4'):
         """
 
         :param k_method:
         :param do_clustering:
         :param use_cams:
+        :param irmin:
         :param irmax:
         :param raw_csv_list: [List] containing the absolute path to files extracted by self.get_s3_data
         :return:
         """
-        # irmax = 0.001 # Negro
-        # irmax = 0.08 # Fonte Boa
-        # irmin = 0.001 # Manacapuru
         tsgen = TsGenerator(parent_log=self.log)
 
         # GET SERIES SAVE PATH # TODO: refactor
@@ -237,7 +235,7 @@ class Core:
         total = len(raw_csv_list)
 
         if use_cams:
-            # READ CAMS
+            # READ CAMS input .csv file
             df_cams = pd.read_csv(self.arguments['cams'])
             df_cams['pydate'] = pd.to_datetime(df_cams['Datetime'])
 
@@ -285,7 +283,7 @@ class Core:
             try:
                 dfpth, df = tsgen.update_csvs(csv_path=img,
                                               glint=20.0,
-                                              # ir_min_threshold=irmin,
+                                              ir_min_threshold=irmin,
                                               ir_max_threshold=irmax,
                                               savepath=out_dir,
                                               max_aot=max_aot,
@@ -364,8 +362,6 @@ class Core:
         # Compute the avg. SPM
         series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'],
                                              band665=series_df['B8-665'])
-
-        series_df['SPM.median'] = df['SPM'].median()
 
         # create empty excel
         wb = openpyxl.Workbook()
