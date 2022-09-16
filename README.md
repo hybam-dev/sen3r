@@ -54,6 +54,10 @@ optional arguments:
   -p PRODUCT, --product PRODUCT
                         Currently only WFR is available.
   -c CAMS, --cams CAMS  Path to search for auxiliary CAMS file. Optional.
+  -min IRMIN, --irmin IRMIN
+                        Default bottom dropping threshold for IR. Optional.
+  -max IRMAX, --irmax IRMAX
+                        Default upper dropping threshold for IR. Optional.
   -k CLUSTER, --cluster CLUSTER
                         Which method to use for clustering. Optional.
   -s, --single          Single mode: run SEN3R over only one image instead of
