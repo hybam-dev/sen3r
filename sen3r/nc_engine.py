@@ -221,8 +221,8 @@ class ParallelCoord:
                 result = list(executor.map(self.vect_dist_subtraction, coord_vect_pairs, [grid]*len(coord_vect_pairs)))
 
             except concurrent.futures.process.BrokenProcessPool as ex:
-                self.log.info(f"{ex} This might be caused by limited system resources. "
-                              f"Try increasing system memory or disable concurrent processing. ")
+                print(f"{ex} This might be caused by limited system resources. "
+                      f"Try increasing system memory or disable concurrent processing. ")
 
         return np.array(result)
 

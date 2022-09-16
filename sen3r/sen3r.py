@@ -30,6 +30,7 @@ class Core:
         self.arguments = input_args
         self.INPUT_DIR = self.arguments['input']
         self.OUTPUT_DIR = self.arguments['out']
+        Path(self.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)  # Assure the existence of an output folder for the LOG
         self.ROI = self.arguments['roi']
         self.product = self.arguments['product']
         self.CSV_N1 = os.path.join(self.OUTPUT_DIR, 'CSV_N1')
