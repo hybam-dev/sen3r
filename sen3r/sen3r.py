@@ -32,8 +32,10 @@ class Core:
         self.OUTPUT_DIR = self.arguments['out']
         Path(self.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)  # Assure the existence of an output folder for the LOG
         self.ROI = self.arguments['roi']
+        self.RNAME = os.path.basename(self.ROI.split('.')[0])  # Take the ROI without the file extension.
         self.product = self.arguments['product']
         self.CSV_N1 = os.path.join(self.OUTPUT_DIR, 'CSV_N1')
+        self.REP = os.path.join(self.OUTPUT_DIR, 'RDATA')
         self.INSTANCE_TIME_TAG = datetime.now().strftime('%Y%m%dT%H%M%S')
         self.arguments['logfile'] = os.path.join(self.arguments['out'], 'sen3r_' + self.INSTANCE_TIME_TAG + '.log')
         self.log = Utils.create_log_handler(self.arguments['logfile'])
@@ -151,6 +153,8 @@ class Core:
         self.log.info('------')
         self.log.info(f'Generating ancillary data folder: {self.CSV_N1}')
         Path(self.CSV_N1).mkdir(parents=True, exist_ok=True)
+        self.log.info(f'Generating report folder: {self.REP}')
+        Path(self.REP).mkdir(parents=True, exist_ok=True)
         self.log.info(f'Attempting to extract geometries from: {self.ROI}')
         self.vertices = Utils.roi2vertex(roi=self.ROI, aux_folder_out=self.CSV_N1)
 
@@ -201,9 +205,10 @@ class Core:
         band_data.to_csv(out_dir, index=False)
         return band_data, img_data, [out_dir]
 
-    def process_csv_list(self, raw_csv_list, irmin=False, irmax=False, use_cams=False, do_clustering=True, k_method='M4'):
+    def process_csv_list(self, raw_csv_list, irmin=False, irmax=False, max_aot=False, use_cams=False, do_clustering=True, k_method='M4'):
         """
 
+        :param max_aot:
         :param k_method:
         :param do_clustering:
         :param use_cams:
@@ -213,27 +218,27 @@ class Core:
         :return:
         """
         tsgen = TsGenerator(parent_log=self.log)
+        self.tsg = tsgen
 
         # GET SERIES SAVE PATH # TODO: refactor
-        excel_save_path = os.path.join(self.OUTPUT_DIR, 'sen3r.xlsx')
+        safe_version = self.VERSION.replace('.', '-')  # Bad idea to save files with dots in the name
+        excel_save_path = os.path.join(self.OUTPUT_DIR, f'{self.RNAME}_SEN3R-{safe_version}.xlsx')
+        report_save_path = os.path.join(self.OUTPUT_DIR, f'{self.RNAME}_SEN3R-{safe_version}.pdf')
         out_dir = os.path.join(self.OUTPUT_DIR, 'CSV_N2')
         img_dir = os.path.join(self.OUTPUT_DIR, 'IMG')
-        # img_save_pth = os.path.join(dest, station_name + f'_v{version}_img_dbscan')
-        # series_save_pth = os.path.join(dest, station_name + f'_v{version}_img_dbscan_series')
 
         # CREATE THE DIRECTORIES IF THEY DOESN'T EXIST YET
         Path(out_dir).mkdir(parents=True, exist_ok=True)
         Path(img_dir).mkdir(parents=True, exist_ok=True)
-        # Path(img_save_pth).mkdir(parents=True, exist_ok=True)
-        # Path(series_save_pth).mkdir(parents=True, exist_ok=True)
 
         # Start timer
         t1 = time.perf_counter()
 
-        max_aot = False
-
         # Update RAW DFs
         total = len(raw_csv_list)
+
+        # List of report pages
+        img_report_list = []
 
         if use_cams:
             # READ CAMS input .csv file
@@ -265,8 +270,9 @@ class Core:
             else:
                 cams_val = False
 
-            # read and plot the
+            # read LV1 CSVs and generate scatter plots
             rawDf = pd.read_csv(img, sep=',')
+
             tsgen.plot_sidebyside_sktr(x1_data=rawDf['Oa08_reflectance:float'],
                                        y1_data=rawDf['Oa17_reflectance:float'],
                                        x2_data=rawDf['Oa08_reflectance:float'],
@@ -291,12 +297,27 @@ class Core:
                                               cams_val=cams_val)
 
             except Exception as e:
-                print("type error: " + str(e))
+                self.log.info("type error: " + str(e))
                 continue
 
             if len(df) < 1:
-                print(f'Skipping empty CSV: {dfpth}')
+                self.log.info(f'Skipping empty CSV: {dfpth}')
                 continue
+
+            # ,--------------------------------------------------,
+            # | 26/09/2022 - Generate report page for N... image |----------------------------------------------
+            # '--------------------------------------------------'
+            if len(df) >= 3:
+                self.log.info(f'Dataframe for {figdate} >= 3 pixels: Generating page for report.')
+                img_report = tsgen.raw_report(full_csv_path=img,
+                                              img_id_date=figdate,
+                                              raw_df=rawDf,
+                                              filtered_df=df,
+                                              output_rprt_path=self.REP)
+
+                img_report_list.append(img_report)
+            else:
+                self.log.info(f'Dataframe for {figdate} < 3 pixels: Page skipped from the PDF report.')
 
             # ,--------------------,
             # | DBSCAN Clustering  |------------------------------------------------------------------------------------
@@ -323,6 +344,7 @@ class Core:
                     indexNames = df[df['cluster'] != k].index
                     df.drop(indexNames, inplace=True)
                     # TODO : test cluster with the smallest T865 value as a primary/secondary rule.
+
                 else:
                     df = bkpdf.copy()
 
@@ -412,8 +434,15 @@ class Core:
 
         wb.save(excel_save_path)
 
+        # ,------------------------------------,
+        # | 26/09/2022 - Generate final report |------------------------------------------------------------------------
+        # '------------------------------------'
+        self.log.info(f'Generating PDF report at: {report_save_path}')
+
+        img_report_list[0].save(report_save_path, "PDF", resolution=100.0,
+                                save_all=True, append_images=img_report_list[1:])
+
         t2 = time.perf_counter()
         outputstr = f'>>> Finished in {round(t2 - t1, 2)} second(s). <<<'
         print(outputstr)
         self.log.info(outputstr)
-        pass

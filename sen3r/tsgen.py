@@ -811,7 +811,7 @@ class TsGenerator:
             ["Mean", str(xmean)],
             ["Std. Deviation", str(std)],
             ["KDE Local max.", str(kdemaxes)],
-            ["Coeff. of variation", str(round(cv, 2))+'%']
+            ["Coeff. of variation", str(round(cv, 2)) + '%']
         ]
 
         table = ax2.table(cellText=table_data, loc='center')
@@ -856,7 +856,8 @@ class TsGenerator:
         plt.close(fig)
 
     # GENERATES COMPARATIVE SCATTERPLOTS
-    def plot_overlap_sktr(self, x1_data, y1_data, x2_data, y2_data, x_lbl, y_lbl, c1_data, c1_lbl, c2_data, c2_lbl, title,
+    def plot_overlap_sktr(self, x1_data, y1_data, x2_data, y2_data, x_lbl, y_lbl, c1_data, c1_lbl, c2_data, c2_lbl,
+                          title,
                           savepathname):
         """
         # TODO: Write docstrings.
@@ -1055,10 +1056,10 @@ class TsGenerator:
         RAW_CSV = full_csv_path
 
         if output_rprt_path:
-            aux_figs_path = os.path.join(output_rprt_path, 'aux_'+figdate)
+            aux_figs_path = os.path.join(output_rprt_path, 'aux_' + figdate)
 
         else:
-            aux_figs_path = os.path.join(RAW_CSV, 'aux_'+figdate)
+            aux_figs_path = os.path.join(RAW_CSV, 'aux_' + figdate)
 
         os.mkdir(aux_figs_path)
 
@@ -1068,19 +1069,18 @@ class TsGenerator:
         svpt3 = os.path.join(aux_figs_path, 'c.png')
         svpt4 = os.path.join(aux_figs_path, 'd.png')
         svpt5 = os.path.join(aux_figs_path, 'e.png')
-        svpt_report = os.path.join(output_rprt_path, 'report_'+figdate+'.pdf')
+        svpt_report = os.path.join(output_rprt_path, 'report_' + figdate + '.pdf')
 
         # IMG A - Scatter MAP
         plt.rcParams['figure.figsize'] = self.rcparam
         fig = plt.figure()
         ax = plt.axes()
         ax.set_title(figdate, fontsize=16)
-        sktmap = ax.scatter(df['longitude:double'], df['latitude:double'], c=df['T865:float'], cmap='viridis', s=3)
+        sktmap = ax.scatter(df['longitude:double'], df['latitude:double'], c=df['T865:float'],
+                            cmap='viridis', s=3, marker='s')
         cbar = fig.colorbar(sktmap, ax=ax)
         cbar.set_label('Aer. Optical Thickness (T865)')
 
-        ax.set_xlim(-61.34, -60.46)
-        ax.set_ylim(-3.65, -3.25)
         ax.set_xlabel('LON')
         ax.set_ylabel('LAT')
 
@@ -1088,31 +1088,31 @@ class TsGenerator:
 
         # IMG B - RAW Scatter
         self.plot_sidebyside_sktr(x1_data=df['Oa08_reflectance:float'],
-                                   y1_data=df['Oa17_reflectance:float'],
-                                   x2_data=df['Oa08_reflectance:float'],
-                                   y2_data=df['Oa17_reflectance:float'],
-                                   x_lbl='RED: Oa08 (665nm)',
-                                   y_lbl='NIR: Oa17 (865nm)',
-                                   c1_data=df['A865:float'],
-                                   c1_lbl='Aer. Angstrom Expoent (A865)',
-                                   c2_data=df['T865:float'],
-                                   c2_lbl='Aer. Optical Thickness (T865)',
-                                   # title=f'MANACAPURU v6 WFR {figdate} RED:Oa08(665nm) x NIR:Oa17(865nm)',
-                                   savepathname=svpt2)
+                                  y1_data=df['Oa17_reflectance:float'],
+                                  x2_data=df['Oa08_reflectance:float'],
+                                  y2_data=df['Oa17_reflectance:float'],
+                                  x_lbl='RED: Oa08 (665nm)',
+                                  y_lbl='NIR: Oa17 (865nm)',
+                                  c1_data=df['A865:float'],
+                                  c1_lbl='Aer. Angstrom Expoent (A865)',
+                                  c2_data=df['T865:float'],
+                                  c2_lbl='Aer. Optical Thickness (T865)',
+                                  # title=f'MANACAPURU v6 WFR {figdate} RED:Oa08(665nm) x NIR:Oa17(865nm)',
+                                  savepathname=svpt2)
 
         # IMG C - Filtered Scatter
         self.plot_sidebyside_sktr(x1_data=fdf['Oa08_reflectance:float'],
-                                   y1_data=fdf['Oa17_reflectance:float'],
-                                   x2_data=fdf['Oa08_reflectance:float'],
-                                   y2_data=fdf['Oa17_reflectance:float'],
-                                   x_lbl='RED: Oa08 (665nm)',
-                                   y_lbl='NIR: Oa17 (865nm)',
-                                   c1_data=fdf['A865:float'],
-                                   c1_lbl='Aer. Angstrom Expoent (A865)',
-                                   c2_data=fdf['T865:float'],
-                                   c2_lbl='Aer. Optical Thickness (T865)',
-                                   # title=f'MANACAPURU v6 WFR {figdate} RED:Oa08(665nm) x NIR:Oa17(865nm)',
-                                   savepathname=svpt3)
+                                  y1_data=fdf['Oa17_reflectance:float'],
+                                  x2_data=fdf['Oa08_reflectance:float'],
+                                  y2_data=fdf['Oa17_reflectance:float'],
+                                  x_lbl='RED: Oa08 (665nm)',
+                                  y_lbl='NIR: Oa17 (865nm)',
+                                  c1_data=fdf['A865:float'],
+                                  c1_lbl='Aer. Angstrom Expoent (A865)',
+                                  c2_data=fdf['T865:float'],
+                                  c2_lbl='Aer. Optical Thickness (T865)',
+                                  # title=f'MANACAPURU v6 WFR {figdate} RED:Oa08(665nm) x NIR:Oa17(865nm)',
+                                  savepathname=svpt3)
 
         # IMG C - KD Histogram
         x = fdf['Oa08_reflectance:float'].copy()
@@ -1141,60 +1141,3 @@ class TsGenerator:
         plt.close('all')
 
         return report
-
-    def full_reports(self, raw_csv_dir, save_reports_dir):
-        """
-        Given a path of RAW Sentinel3 CSV subsets, filter and generate reports.
-        """
-        todo = self.build_list_from_subset(raw_csv_dir)
-        todo_fullpath = [os.path.join(raw_csv_dir, csv) for csv in todo]
-
-        t1 = time.perf_counter()
-        skiplst = []
-        donelst = []
-        img_report_list = []
-
-        total = len(todo_fullpath)
-        for n, img in enumerate(todo_fullpath):
-
-            figdate = os.path.basename(img).split('____')[1].split('_')[0]
-
-            print(f'>>> Loading CSV: {n + 1} of {total} ... {figdate}')
-
-            df = pd.read_csv(img, sep='\t', skiprows=1)
-
-            # TODO: There should not need to be 2 tests doing the same thing :(
-            try:
-                upd_msg, fdf = self.update_csvs(csv_path=img, threshold=0.2)
-            except Exception as e:
-                print("type error: " + str(e))
-                skiplst.append(img)
-                continue
-
-            # The KDE needs at least two different reflectance values to work.
-            if upd_msg == 'KDE_fail':
-                skiplst.append(img)
-                continue
-
-            donelst.append(img)
-            img_report = self.raw_report(full_csv_path=img,
-                                         img_id_date=figdate,
-                                         raw_df=df,
-                                         filtered_df=fdf,
-                                         output_rprt_path=save_reports_dir)
-
-            img_report_list.append(img_report)
-
-        print('Merging images to generate full report...')
-
-        pdf_report_filename = os.path.join(save_reports_dir, 'full_report.pdf')
-
-        img_report_list[0].save(pdf_report_filename,
-                                "PDF",
-                                resolution=100.0,
-                                save_all=True,
-                                append_images=img_report_list[1:])
-
-        t2 = time.perf_counter()
-        print(f'>>> Finished in {round(t2 - t1, 2)} second(s). <<<')
-        return skiplst, donelst
