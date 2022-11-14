@@ -127,6 +127,9 @@ class TsGenerator:
         return spm
 
     @staticmethod
+    def spm_tchad():
+
+    @staticmethod
     def get_glint(df):
         """
         Calculates glint angle based on paper:
@@ -139,7 +142,6 @@ class TsGenerator:
                                            np.sin(np.deg2rad(df['OZA:float'])) *
                                            np.sin(np.deg2rad(df['SZA:float'])) *
                                            np.cos(np.deg2rad(abs(df['SAA:float'] - df['OAA:float'])))))
-
         # excel version
         # =GRAUS(ACOS(COS(RADIANOS(OZA))*COS(RADIANOS(SZA))-SEN(RADIANOS(OZA))*SEN(RADIANOS(SZA))*COS(RADIANOS(ABS(SAA-OAA)))))
         return df

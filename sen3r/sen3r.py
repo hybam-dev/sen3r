@@ -262,10 +262,10 @@ class Core:
                 dtlbl = datetime.strptime(figdate, '%Y%m%dT%H%M%S')
                 dtlbl = dtlbl.replace(hour=12, minute=0, second=0, microsecond=0)
                 cams_row = df_cams[df_cams['pydate'] == dtlbl]
-                cams_val = cams_row['AOD865'].values[0]
-                # if cams_val is empty no match was found
-                if not cams_val:
+                if len(cams_row) < 1:  # if cams_row == 0 no matching date was found in the CAMS.csv file
                     cams_val = False
+                else:
+                    cams_val = cams_row['AOD865'].values[0]
 
             else:
                 cams_val = False
@@ -330,7 +330,7 @@ class Core:
                 tsgen.db_scan(df, dd.clustering_methods[k_method])
 
                 # Plot and save the identified clusters
-                tsgen.plot_scattercluster(df, col_x='Oa17_reflectance:float', col_y='Oa08_reflectance:float',
+                tsgen.plot_scattercluster(df, col_x='Oa08_reflectance:float', col_y='Oa17_reflectance:float',
                                           col_color='T865:float', title=f'DBSCAN {figdate}', savepath=savpt_k)
 
                 # Delete rows classified as noise:
@@ -382,9 +382,9 @@ class Core:
         # indexNames = series_df[series_df['B17-865'] < irmin].index
         # series_df.drop(indexNames, inplace=True)
 
-        # Compute the avg. SPM
-        series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'],
-                                             band665=series_df['B8-665'])
+        # Compute the avg. SPM and remove decimal precision converting from FLOAT to INT
+        series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'], band665=series_df['B8-665'])
+        series_df['SPM.avg'] = series_df['SPM.avg'].astype(int)
 
         # create empty excel
         wb = openpyxl.Workbook()
