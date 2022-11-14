@@ -157,7 +157,8 @@ class DefaultDicts:
                    ('Oa17_reflectance.nc', 'Oa17_reflectance'),
                    ('Oa18_reflectance.nc', 'Oa18_reflectance'),
                    ('Oa21_reflectance.nc', 'Oa21_reflectance'),
-                   ('wqsf.nc', 'WQSF'))
+                   ('wqsf.nc', 'WQSF'),
+                   ('tsm_nn.nc', 'TSM_NN'))
 
     syn_files = {
         'Syn_AOT550.nc': ['T550'],
@@ -213,6 +214,7 @@ class DefaultDicts:
         'WQSF': 'WQSF_lsb:double',
         'A865': 'A865:float',
         'T865': 'T865:float',
+        'TSM_NN': 'TSM_NN'
     }
 
     l1_wave_bands = {

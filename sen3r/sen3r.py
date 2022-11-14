@@ -384,7 +384,7 @@ class Core:
 
         # Compute the avg. SPM and remove decimal precision converting from FLOAT to INT
         series_df['SPM.avg'] = tsgen.get_spm(band865=series_df['B17-865'], band665=series_df['B8-665'])
-        series_df['SPM.avg'] = series_df['SPM.avg'].astype(int)
+        #series_df['SPM.avg'] = series_df['SPM.avg'].astype(int)
 
         # create empty excel
         wb = openpyxl.Workbook()

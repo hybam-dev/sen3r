@@ -128,6 +128,7 @@ class TsGenerator:
 
     @staticmethod
     def spm_tchad():
+        pass
 
     @staticmethod
     def get_glint(df):
@@ -365,7 +366,8 @@ class TsGenerator:
                 'A865:float',
                 'T865:float',
                 'GLINT',
-                'ABSVLDPX']
+                'ABSVLDPX',
+                'TSM_NN']
 
         # Drop columns not present in the list
         df = df.filter(keep)
@@ -466,6 +468,7 @@ class TsGenerator:
             result_dict['B17.std'] = 0
             result_dict['AbsVldPx'] = 0
             result_dict['VldPx.pct'] = 0
+            result_dict['TSM_NN'] = 0
 
         return result_dict
 
@@ -531,6 +534,8 @@ class TsGenerator:
         string_labels = []
         quality_labels = []
         qlinfo_labels = []
+
+        SPM_NN_tms = []
 
         total = len(sorted_list)
 
@@ -605,6 +610,8 @@ class TsGenerator:
             quality_labels.append(quality)
             qlinfo_labels.append(qobs)
 
+            SPM_NN_tms.append(means_dict['TSM_NN'])
+
             d = {'filename': sorted_list,
                  'Datetime': datetime_labels,
                  'Date-String': string_labels,
@@ -654,7 +661,9 @@ class TsGenerator:
                  'Abs.vld.px': absvldpx_tms,
                  '%.vld.px': pctvlddpx_tms,
                  'Quality': quality_labels,
-                 'Qlt.desc.': qlinfo_labels}
+                 'Qlt.desc.': qlinfo_labels,
+
+                 'SPM_NN': SPM_NN_tms}
 
         return d
 
