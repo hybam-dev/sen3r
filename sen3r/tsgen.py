@@ -85,6 +85,11 @@ class TsGenerator:
         return df
 
     @staticmethod
+    def db_scan(df, bands, column_name='cluster', eps=0.01, min_samples=5):
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(df[bands])
+        df[column_name] = clustering.labels_
+
+    @staticmethod
     # concentração = 759,12 * (NIR /RED)^1,92
     def _spm_modis(nir, red):
         return 759.12 * ((nir / red) ** 1.92)
@@ -92,11 +97,6 @@ class TsGenerator:
     @staticmethod
     def _power(x, a, b, c):
         return a * (x) ** (b) + c
-
-    @staticmethod
-    def db_scan(df, bands, column_name='cluster', eps=0.01, min_samples=5):
-        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(df[bands])
-        df[column_name] = clustering.labels_
 
     def get_spm(self, band665, band865, cutoff_value=0.027, cutoff_delta=0.007, low_params=None, high_params=None):
 

@@ -371,6 +371,7 @@ class Utils:
         poly_path: string (Path to .geojson file)
         return: dict (Containing one or several polygons depending on the complexity of the input .json)
         """
+        # TODO: use isinstance(s, str) to avoid breaking when pathlib.Path is passed.
         with open(geojson_path) as f:
             data = json.load(f)
 

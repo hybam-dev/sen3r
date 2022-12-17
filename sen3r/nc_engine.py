@@ -102,12 +102,9 @@ class NcEngine:
         # extract only the radiometric bands from the NetCDF list
         nc_bands = [b for b in nc_files if b.startswith('Oa')]
 
-        if rad_only:
-            return nc_bands
-        else:
-            return nc_files
+        return nc_bands if rad_only else nc_files
 
-    def latlon_2_xy_poly(self, poly_path, go_parallel=True):
+    def latlon_2_xy_poly(self, poly_path, go_parallel=False):
         """
         Given an input polygon and image, return a dataframe containing
         the data of the image that falls inside the polygon.
